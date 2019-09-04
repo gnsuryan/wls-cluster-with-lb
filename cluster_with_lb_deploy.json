@@ -498,7 +498,7 @@
                     "fileUris": [
                         "https://raw.githubusercontent.com/gnsuryan/wls-cluster-with-lb/master/setupClusterDomain.sh"
                     ],
-                    "commandToExecute": "[concat('sh setupClusterDomain.sh',' ',parameters('acceptOTNLicenseAgreement'),' ',parameters('otnAccountUsername'),' ',parameters('otnAccountPassword'),' ',parameters('wlsDomainName'),' ',parameters('wlsUserName'),' ',parameters('wlsPassword'),' ','admin',' ',variables('vmNamePrefix'))]"
+                    "commandToExecute": "[concat('sh setupClusterDomain.sh',' ',parameters('acceptOTNLicenseAgreement'),' ',parameters('otnAccountUsername'),' ',parameters('otnAccountPassword'),' ',parameters('wlsDomainName'),' ',parameters('wlsUserName'),' ',parameters('wlsPassword'),' ','admin',' ',variables('adminVMName'))]"
                 }
             }
         },
@@ -524,7 +524,7 @@
                     "fileUris": [
                         "https://raw.githubusercontent.com/gnsuryan/wls-cluster-with-lb/master/setupClusterDomain.sh"
                     ],
-                    "commandToExecute": "[concat('sh setupClusterDomain.sh',' ',parameters('acceptOTNLicenseAgreement'),' ',parameters('otnAccountUsername'),' ',parameters('otnAccountPassword'),' ',parameters('wlsDomainName'),' ',parameters('wlsUserName'),' ',parameters('wlsPassword'),' ',concat(parameters('managedServerPrefix'),copyIndex()),' ',variables('vmNamePrefix'))]"
+                    "commandToExecute": "[concat('sh setupClusterDomain.sh',' ',parameters('acceptOTNLicenseAgreement'),' ',parameters('otnAccountUsername'),' ',parameters('otnAccountPassword'),' ',parameters('wlsDomainName'),' ',parameters('wlsUserName'),' ',parameters('wlsPassword'),' ',concat(parameters('managedServerPrefix'),copyIndex()),' ',variables('adminVMName'))]"
                 }
             }
         }
