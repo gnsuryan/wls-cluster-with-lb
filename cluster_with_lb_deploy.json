@@ -141,7 +141,7 @@
         "extensionUrl": "[concat(parameters('_artifactsLocation'), 'scripts/')]",
         "imagePublisher": "Oracle",
         "imageOffer": "Oracle-Linux",
-        "vmNamePrefix": "wlsVM",
+        "managedServerVMName": "managedServerVM",
         "adminVMName": "adminServerVM",
         "nicName": "_NIC",
         "storageAccountName": "[concat('storage',uniquestring(resourceGroup().id))]",
@@ -273,7 +273,7 @@
             "condition": "[not(equals(copyIndex(),0))]",
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2018-11-01",
-            "name": "[concat(variables('vmNamePrefix'),copyIndex(),variables('nicName'))]",
+            "name": "[concat(variables('managedServerVMName'),copyIndex(),variables('nicName'))]",
             "location": "[parameters('location')]",
             "copy": {
                 "name": "nicLoopForMS",
@@ -406,7 +406,7 @@
             "condition": "[not(equals(copyIndex(),0))]",
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2018-10-01",
-            "name": "[concat(variables('vmNamePrefix'), copyIndex())]",
+            "name": "[concat(variables('managedServerVMName'), copyIndex())]",
             "location": "[parameters('location')]",
             "copy": {
                 "name": "virtualMachineLoopForMS",
@@ -425,7 +425,7 @@
                     "vmSize": "[variables('vmSize')]"
                 },
                 "osProfile": {
-                    "computerName": "[concat(variables('vmNamePrefix'), copyIndex())]",
+                    "computerName": "[concat(variables('managedServerVMName'), copyIndex())]",
                     "adminUsername": "[parameters('adminUsername')]",
                     "adminPassword": "[parameters('adminPasswordOrKey')]",
                     "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), json('null'), variables('linuxConfiguration'))]"
@@ -448,7 +448,7 @@
                 },
                 "networkProfile": {
                     "networkInterfaces": [{
-                        "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('vmNamePrefix'),copyIndex(),variables('nicName')))]"
+                        "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('managedServerVMName'),copyIndex(),variables('nicName')))]"
                     }]
                 },
                 "diagnosticsProfile": {
@@ -483,7 +483,7 @@
         {
             "condition": "[not(equals(copyIndex(),0))]",
             "type": "Microsoft.Compute/virtualMachines/extensions",
-            "name": "[concat(variables('vmNamePrefix'),copyIndex(),'/newuserscript')]",
+            "name": "[concat(variables('managedServerVMName'),copyIndex(),'/newuserscript')]",
             "apiVersion": "2017-12-01",
             "location": "[parameters('location')]",
             "copy": {
