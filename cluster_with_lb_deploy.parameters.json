@@ -40,6 +40,12 @@
     },
     "adminVMName": {
       "value": "GEN-UNIQUE"        
+    },
+    "dnsNameforLBIP": {
+      "value": "GEN-UNIQUE"
+    },
+    "LBPublicIPAddressName": {
+      "value": "GEN-UNIQUE"
     }
   }
 }
