@@ -228,23 +228,6 @@
             }
         },
         {
-            "condition": "[not(equals(copyIndex(),0))]",
-            "type": "Microsoft.Network/publicIPAddresses",
-            "apiVersion": "2018-11-01",
-            "name": "[concat(variables('vmNamePrefix'),copyIndex(),variables('publicIPAddressName'))]",
-            "location": "[parameters('location')]",
-            "copy": {
-                "name": "publicIPLoop",
-                "count": "[parameters('numberOfInstances')]"
-            },
-            "properties": {
-                "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
-                "dnsSettings": {
-                    "domainNameLabel": "[concat(parameters('dnsLabelPrefix'),copyindex())]"
-                }
-            }
-        },
-        {
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2018-11-01",
             "name": "[variables('virtualNetworkName')]",
@@ -269,8 +252,7 @@
             "name": "[concat(variables('adminVMName'),variables('nicName'))]",
             "location": "[parameters('location')]",
             "dependsOn": [
-                "[variables('virtualNetworkName')]",
-                "publicIPLoop"
+                "[variables('virtualNetworkName')]"
             ],
             "properties": {
                 "ipConfigurations": [{
@@ -300,7 +282,6 @@
             "dependsOn": [
                 "[variables('virtualNetworkName')]",
                 "[parameters('LBPublicIPAddressName')]",
-                "publicIPLoop",
                 "[variables('loadBalancerName')]"
             ],
             "properties": {
@@ -308,9 +289,6 @@
                     "name": "ipconfig2",
                     "properties": {
                         "privateIPAllocationMethod": "Dynamic",
-                        "publicIPAddress": {
-                            "id": "[resourceId('Microsoft.Network/publicIPAddresses',concat(variables('vmNamePrefix'),copyIndex(),variables('publicIPAddressName')))]"
-                        },
                         "subnet": {
                             "id": "[variables('subnetRef')]"
                         },
@@ -536,3 +514,4 @@
         }
     }
 }
+
