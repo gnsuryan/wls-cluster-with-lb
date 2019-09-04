@@ -332,7 +332,8 @@
                     "protocol": "Tcp",
                     "frontendPort": 8001,
                     "backendPort": 8001,
-                    "idleTimeoutInMinutes": 15
+                    "idleTimeoutInMinutes": 15,
+		    "loadDistribution": "SourceIP"
                   },
                   "Name": "lbrule"
                 }
