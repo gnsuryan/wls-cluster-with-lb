@@ -82,10 +82,18 @@
       },
       "dnsNameforLBIP": {
          "type": "string",
+         "defaultValue": "wlsclusterlb",
          "metadata": {
             "description": "DNS for Load Balancer IP"
         }
       },
+      "LBPublicIPAddressName": {
+        "type": "string",
+        "defaultValue": "LBPublicIP",
+        "metadata": {
+         "description": "Public IP Name for the Load Balancer"
+        }
+      },	     
       "linuxOSVersion":{
          "type":"string",
          "defaultValue":"7.3",
@@ -131,11 +139,10 @@
    },
    "variables":{
       "extensionUrl":"[concat(parameters('_artifactsLocation'), 'scripts/')]",
-      "availabilitySetName": "myAvailabilitySet",
-      "lbName":"myLB",
       "imagePublisher":"Oracle",
       "imageOffer":"Oracle-Linux",
       "vmNamePrefix": "wlsVM",
+      "adminVMName" : "adminServerVM",
       "nicName":"_NIC",	   
       "storageAccountName":"[concat('storage',uniquestring(resourceGroup().id))]",	   
       "addressPrefix":"10.0.0.0/16",
@@ -148,13 +155,17 @@
       "virtualNetworkName":"[concat(parameters('wlsDomainName'),'_VNET')]",
       "ScriptFolder": "scripts",
       "ScriptFileName": "setupClusterDomain.sh",
-      "numberOfInstances": 2,
-      "LBpublicIPAddressName": "LBPublicIP",
-      "LBpublicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('LBpublicIPAddressName'))]",
-      "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('lbName'))]",
-      "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/LoadBalancerFrontEnd')]",
-      "lbPoolID": "[concat(variables('lbID'),'/backendAddressPools/BackendPool1')]",
-      "lbProbeID": "[concat(variables('lbID'),'/probes/tcpProbe')]",
+      "availabilitySetName": "WLSCluster-AvailabilitySet",	
+      "adminAvailabilitySetName": "WLSAdmin-AvailabilitySet",
+      "loadBalancerName": "ilb",
+      "lbID": "[resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName'))]",
+      "publicLBIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',parameters('LBPublicIPAddressName'))]", 
+      "availabilitySetId": {
+            "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('availabilitySetName'))]"
+      },
+      "loadBalancerBackendAddressPoolsId" : {
+	    "id": "[concat(variables('lbID'), '/backendAddressPools/BackendPool1')]"  
+      },
       "linuxConfiguration":{
          "disablePasswordAuthentication":true,
          "ssh":{
@@ -183,16 +194,30 @@
          }
       },
       {
+        "apiVersion": "2018-04-01",
         "type": "Microsoft.Compute/availabilitySets",
+        "location": "[parameters('location')]",
         "name": "[variables('availabilitySetName')]",
-        "apiVersion": "2016-04-30-preview",
-        "location": "[resourceGroup().location]",
         "properties": {
           "platformFaultDomainCount": 2,
-          "platformUpdateDomainCount": 2,
-          "managed": true
+          "platformUpdateDomainCount": 2
+        },
+        "sku": {
+        "name": "Aligned"
         }
       },
+      {
+         "type":"Microsoft.Network/publicIPAddresses",
+         "apiVersion":"2018-11-01",
+         "name":"[parameters('LBPublicIPAddressName')]",
+         "location": "[resourceGroup().location]",
+         "properties":{
+            "publicIPAllocationMethod":"[variables('publicIPAddressType')]",
+            "dnsSettings":{
+               "domainNameLabel":"[parameters('dnsNameforLBIP')]"
+            }
+         }
+      },      
       {
          "type":"Microsoft.Network/publicIPAddresses",
          "apiVersion":"2018-11-01",
@@ -206,18 +231,6 @@
             "publicIPAllocationMethod":"[variables('publicIPAddressType')]",
             "dnsSettings":{
                "domainNameLabel":"[concat(parameters('dnsLabelPrefix'),copyindex())]"
-            }
-         }
-      },
-      {
-         "type":"Microsoft.Network/publicIPAddresses",
-         "apiVersion":"2018-11-01",
-         "name":"[variables('LBpublicIPAddressName')]",
-         "location":"[parameters('location')]",
-         "properties":{
-            "publicIPAllocationMethod":"[variables('publicIPAddressType')]",
-            "dnsSettings":{
-               "domainNameLabel":"[parameters('dnsNameforLBIP')]"
             }
          }
       },
@@ -253,7 +266,9 @@
          },
          "dependsOn":[
             "[variables('virtualNetworkName')]",
-            "publicIPLoop"
+            "[parameters('LBPublicIPAddressName')]",
+            "publicIPLoop",
+            "[variables('loadBalancerName')]"
          ],
          "properties":{
             "ipConfigurations":[
@@ -278,22 +293,23 @@
          }
         },
         {
-            "apiVersion": "2015-05-01-preview",
-            "name": "[variables('lbName')]",
+            "apiVersion": "2018-04-01",
             "type": "Microsoft.Network/loadBalancers",
+            "name": "[variables('loadBalancerName')]",            
             "location": "[resourceGroup().location]",
             "dependsOn": [
-              "[concat('Microsoft.Network/publicIPAddresses/', variables('LBpublicIPAddressName'))]"
+              "[parameters('LBPublicIPAddressName')]",
+              "[variables('virtualNetworkName')]"
             ],
             "properties": {
               "frontendIPConfigurations": [
                 {
-                  "name": "LoadBalancerFrontEnd",
                   "properties": {
                     "publicIPAddress": {
-                      "id": "[variables('LBpublicIPAddressID')]"
+                      "id": "[variables('publicLBIPAddressID')]"
                     }
-                  }
+                  },
+		  "name": "LoadBalancerFrontend"
                 }
               ],
               "backendAddressPools": [
@@ -303,34 +319,33 @@
               ],
               "loadBalancingRules": [
                 {
-                  "name": "LBRule",
                   "properties": {
                     "frontendIPConfiguration": {
-                      "id": "[variables('frontEndIPConfigID')]"
+                        "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/frontendIpConfigurations/LoadBalancerFrontend')]"
                     },
                     "backendAddressPool": {
-                      "id": "[variables('lbPoolID')]"
-                    },
+                	"id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/backendAddressPools/BackendPool1')]"
+              	    },
+		    "probe": {
+		        "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/probes/lbprobe')]"
+		    },              		
                     "protocol": "Tcp",
-                    "frontendPort": 80,
-                    "backendPort": 80,
-                    "enableFloatingIP": false,
-                    "idleTimeoutInMinutes": 5,
-                    "probe": {
-                      "id": "[variables('lbProbeID')]"
-                    }
-                  }
+                    "frontendPort": 8001,
+                    "backendPort": 8001,
+                    "idleTimeoutInMinutes": 15
+                  },
+                  "Name": "lbrule"
                 }
               ],
               "probes": [
                 {
-                  "name": "tcpProbe",
                   "properties": {
                     "protocol": "Tcp",
-                    "port": 80,
-                    "intervalInSeconds": 5,
+                    "port": 8001,
+                    "intervalInSeconds": 15,
                     "numberOfProbes": 2
-                  }
+                  },
+		  "name": "lbprobe"
                 }
               ]
             }
@@ -413,10 +428,10 @@
             "typeHandlerVersion":"2.0",
             "autoUpgradeMinorVersion":true,
             "settings":{
-                       "fileUris": [
-			   "https://raw.githubusercontent.com/wls-eng/arm-oraclelinux-wls-cluster/master/setupClusterDomain.sh"
-			],
-			"commandToExecute": "[concat('sh setupClusterDomain.sh',' ',parameters('acceptOTNLicenseAgreement'),' ',parameters('otnAccountUsername'),' ',parameters('otnAccountPassword'),' ',parameters('wlsDomainName'),' ',parameters('wlsUserName'),' ',parameters('wlsPassword'),' ',parameters('managedServerPrefix'),' ',copyIndex(),' ',variables('vmNamePrefix'))]"	
+                 "fileUris": [
+		    "https://raw.githubusercontent.com/wls-eng/arm-oraclelinux-wls-cluster/master/setupClusterDomain.sh"
+		 ],
+		 "commandToExecute": "[concat('sh setupClusterDomain.sh',' ',parameters('acceptOTNLicenseAgreement'),' ',parameters('otnAccountUsername'),' ',parameters('otnAccountPassword'),' ',parameters('wlsDomainName'),' ',parameters('wlsUserName'),' ',parameters('wlsPassword'),' ',parameters('managedServerPrefix'),' ',copyIndex(),' ',variables('vmNamePrefix'))]"	
             }
          }
       }
