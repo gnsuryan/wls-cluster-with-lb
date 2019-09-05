@@ -223,7 +223,7 @@
             "properties": {
                 "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
                 "dnsSettings": {
-                    "domainNameLabel": "[concat(parameters('dnsLabelPrefix'),toLower(variables('adminVMName')))]"
+                    "domainNameLabel": "[concat(toLower(parameters('dnsLabelPrefix')),'-',toLower(resourceGroup().name),'-',toLower(parameters('wlsDomainName')),'-',toLower(variables('adminVMName')))]"
                 }
             }
         },
