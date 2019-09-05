@@ -1,5 +1,5 @@
 # arm-oraclelinux-wls-admin
- Simple deployment of a Weblogic Cluster Domain on multiple Oracle Linux VMs with Weblogic Server pre-installed
+ Simple deployment of a Weblogic Cluster Domain with a Public Front End Load Azure Balancer on multiple Oracle Linux VMs with Weblogic Server pre-installed
 
 <table border="0">
 <tr border="0">
@@ -16,7 +16,7 @@
   </tr>
 </table>    
 
-This template allows us to deploy Weblogic Cluster Domain on multiple Oracle Linux VMs with Weblogic Server (12.2.1.3.0) pre-installed. 
+This template allows us to deploy Weblogic Cluster Domain on multiple Oracle Linux VMs with Weblogic Server (12.2.1.3.0) cluster Domain with a Azure Public Load Balancer pre-installed. 
 This template deploy by default, an A3 size VM in the resource group location and return the fully qualified domain name of the VM.
 
 To install Weblogic Server, requires Oracle Weblogic Install kit and Oracle JDK to be downloaded, from OTN Site (https://www.oracle.com/technical-resources/). The OTN site requires the user to accept <a href="https://www.oracle.com/downloads/licenses/standard-license.html">OTN Free Developer License Agreement</a> before downloading any resources. 
@@ -31,7 +31,7 @@ So, when this template is run, user will be required to accept the <a href="http
 
 *New-AzResourceGroup -Name &lt;resource-group-name&gt; -Location &lt;resource-group-location&gt; 
 
-*New-AzResourceGroupDeployment -ResourceGroupName &lt;resource-group-name&gt; -TemplateUri https://raw.githubusercontent.com/wls-eng/arm-oraclelinux-wls-cluster/master/clusterdeploy.json*
+*New-AzResourceGroupDeployment -ResourceGroupName &lt;resource-group-name&gt; -TemplateUri https://raw.githubusercontent.com/wls-eng/arm-oraclelinux-wls-cluster-with-loadbalancer/master/cluster_with_lb_deploy.json*
 
 **Command line**
 
@@ -39,13 +39,14 @@ So, when this template is run, user will be required to accept the <a href="http
 
 *az group create --name &lt;resource-group-name&gt; --location &lt;resource-group-location&gt;
 
-*az group deployment create --resource-group &lt;resource-group-name&gt; --template-uri https://raw.githubusercontent.com/wls-eng/arm-oraclelinux-wls-cluster/master/clusterdeploy.json*
+*az group deployment create --resource-group &lt;resource-group-name&gt; --template-uri https://raw.githubusercontent.com/wls-eng/arm-oraclelinux-wls-cluster-with-loadbalancer/master/cluster_with_lb_deploy.json*
 
 **Cluster domain configuration**
 <p>Minimum 2 VMs  and maximum of 5 VMs involved for cluster domain setup.</p>
 <p>Domain setup will be available at "/u01/domains/{domain name}" on each VMs
 <p>1)Weblogic admin server will be hosted on as per user supplied for parameter adminVMName. By default name will be adminVM </p>
 <p>2)Other VMs , depending on number of instances managed servers willbe hosted in VMs with name managed server prefix and index   </p>
+<p>3)Azure Internet Facing (Public) Load Balancer listening on Port 8001 which will front end the Weblogic Managed Server VMs </p>
 
 **Accessing Admin Console**
 <p>
@@ -56,6 +57,14 @@ Follow steps once after successful deployment.
  <p>   For secured/ssl access : https://{public ip address or dns name}:7002/console </p>
 </p>
 
+**Accessing Azure Load Balaner**
+<p>
+Follow steps after successful deployment.
+  <p> Access the Applications Deployed on the Weblogic Cluster through the Azure Load Balancer </p>
+  <p> using the port 8001 </p>
+  <p> http://<lb_public_IP>:8001/<application_context>/
+  <p></p>
+ <p> Example: http://myweblogiclob.cloudapp.azure.com:8001/shoppingcart/ </p>
 <h3> Adding another managed server to  running cluster domain </h3>
 
 **PowerShell** 
