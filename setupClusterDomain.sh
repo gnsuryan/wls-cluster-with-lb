@@ -336,9 +336,7 @@ function create_admin_model()
 domainInfo:
    AdminUserName: "$wlsUserName"
    AdminPassword: "$wlsPassword"
-   ServerStartMode: prod
-   AdministrationPortEnabled: true
-   AdministrationPort: 9002
+   ServerStartMode: prod   
 topology:
    Name: "$wlsDomainName"
    AdminServerName: admin
@@ -354,11 +352,10 @@ topology:
         '$wlsServerName':
             ListenPort: $wlsAdminPort
             RestartDelaySeconds: 10
-	    AdministrationPort: 9001
             SSL:
                ListenPort: $wlsSSLAdminPort
                Enabled: true
-   SecurityConfiguration:	       
+   SecurityConfiguration:
        NodeManagerUsername: "$wlsUserName"
        NodeManagerPasswordEncrypted: "$wlsPassword"
 EOF
@@ -385,7 +382,6 @@ topology:
         '$wlsClusterName':
    Server:
         '$wlsServerName' :
-	   AdministrationPort: 9001
            ListenPort: $wlsManagedPort
            Notes: "$wlsServerName managed server"
            Cluster: "$wlsClusterName"
@@ -397,11 +393,66 @@ EOF
 }
 
 #This function to add machine for a given managed server
+function enableAdministrationPortOnAdminServer()
+{
+    echo "Enabling Administration port on Admin Server"
+    cat <<EOF >$DOMAIN_PATH/enableAdministrationPortOnAdminServer.py
+connect('$wlsUserName','$wlsPassword','$wlsAdminURL')
+edit("$wlsServerName")
+startEdit()
+cd('/')
+cmo.setAdministrationPortEnabled(true)
+cmo.setAdministrationPort($wlsAdministrationPortAdmin)
+save()
+resolve()
+activate()
+destroyEditSession("$wlsServerName")
+disconnect()
+EOF
+
+runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; $INSTALL_PATH/Oracle/Middleware/Oracle_Home/oracle_common/common/bin/wlst.sh $DOMAIN_PATH/enableAdministrationPortOnAdminServer.py"
+if [[ $? != 0 ]]; then
+  echo "Error : Failed to enableAdministrationPortOnAdminServer"
+  exit 1
+else
+  echo "Administration Port enabled successfully for Admin Server"
+  export wlsAdminURL="t3s://$wlsAdminHost:$wlsAdministrationPortAdmin"
+  export wlsAdminHttpURL="https://$wlsAdminHost:$wlsAdministrationPortAdmin"
+fi
+
+}
+
+#This function to add machine for a given managed server
+function enableAdministrationPortOnManagedServer()
+{
+    echo "Enabling Administration port on Admin Server"
+    cat <<EOF >$DOMAIN_PATH/enableAdministrationPortOnManagedServer.py
+connect('$wlsUserName','$wlsPassword','$wlsAdminURL')
+edit("$wlsServerName")
+startEdit()
+cd('/Servers/$wlsServerName')
+cmo.setAdministrationPort($wlsAdministrationPortMS)
+save()
+resolve()
+activate()
+destroyEditSession("$wlsServerName")
+disconnect()
+EOF
+
+runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; $INSTALL_PATH/Oracle/Middleware/Oracle_Home/oracle_common/common/bin/wlst.sh $DOMAIN_PATH/enableAdministrationPortOnManagedServer.py"
+if [[ $? != 0 ]]; then
+  echo "Error : Failed to enableAdministrationPortOnManagedServer $wlsServerName"
+  exit 1
+fi
+
+}
+
+#This function to add machine for a given managed server
 function create_machine_model()
 {
     echo "Creating machine name model for managed server $wlsServerName"
     cat <<EOF >$DOMAIN_PATH/add-machine.py
-connect('$wlsUserName','$wlsPassword','t3://$wlsAdminURL')
+connect('$wlsUserName','$wlsPassword','$wlsAdminURL')
 edit("$wlsServerName")
 startEdit()
 cd('/')
@@ -423,7 +474,7 @@ function create_ms_server_model()
 {
     echo "Creating managed server $wlsServerName model"
     cat <<EOF >$DOMAIN_PATH/add-server.py
-connect('$wlsUserName','$wlsPassword','t3://$wlsAdminURL')
+connect('$wlsUserName','$wlsPassword','$wlsAdminURL')
 edit("$wlsServerName")
 startEdit()
 cd('/')
@@ -432,13 +483,13 @@ cd('/Servers/$wlsServerName')
 cmo.setMachine(getMBean('/Machines/$nmHost'))
 cmo.setCluster(getMBean('/Clusters/$wlsClusterName'))
 cmo.setListenAddress('$nmHost')
-cmo.setAdministrationPort(9001)
+cmo.setAdministrationPort($wlsAdministrationPortMS)
 cmo.setListenPort(int($wlsManagedPort))
 cmo.setListenPortEnabled(true)
 cd('/Servers/$wlsServerName/SSL/$wlsServerName')
 cmo.setEnabled(false)
 cd('/Servers/$wlsServerName//ServerStart/$wlsServerName')
-arguments = '-Dweblogic.Name=$wlsServerName  -Dweblogic.management.server=http://$wlsAdminURL'
+arguments = '-Dweblogic.Name=$wlsServerName  -Dweblogic.management.server=$wlsAdminHttpURL'
 cmo.setArguments(arguments)
 save()
 resolve()
@@ -489,7 +540,7 @@ function wait_for_admin()
 {
  #wait for admin to start
 count=1
-export CHECK_URL="http://$wlsAdminURL/weblogic/ready"
+export CHECK_URL="$wlsAdminHttpURL/weblogic/ready"
 status=`curl --insecure -ILs $CHECK_URL | tac | grep -m1 HTTP/1.1 | awk {'print $2'}`
 echo "Waiting for admin server to start"
 while [[ "$status" != "200" ]]
@@ -573,7 +624,7 @@ function start_managed()
 {
     echo "Starting managed server $wlsServerName"
     cat <<EOF >$DOMAIN_PATH/start-server.py
-connect('$wlsUserName','$wlsPassword','t3://$wlsAdminURL')
+connect('$wlsUserName','$wlsPassword','$wlsAdminURL')
 try:
    start('$wlsServerName', 'Server')
 except:
@@ -707,10 +758,13 @@ export wlsAdminHost=$8
 
 validateInput
 
+export wlsAdministrationPortAdmin=9002
+export wlsAdministrationPortMS=9001
 export wlsAdminPort=7001
 export wlsSSLAdminPort=7002
 export wlsManagedPort=8001
-export wlsAdminURL="$wlsAdminHost:$wlsAdminPort"
+export wlsAdminURL="t3://$wlsAdminHost:$wlsAdminPort"
+export wlsAdminHttpURL="http://$wlsAdminHost:$wlsAdminPort"
 export wlsClusterName="cluster1"
 export WLS_VER="12.2.1.3.0"
 export nmHost=`hostname`
@@ -744,12 +798,16 @@ then
   admin_boot_setup  
   create_adminserver_service
   enabledAndStartNodeManagerService
-  enableAndStartAdminServerService
+  enableAndStartAdminServerService  
+  wait_for_admin
+  enableAdministrationPortOnAdminServer
   wait_for_admin
 else
   create_managedSetup
   create_nodemanager_service
   enabledAndStartNodeManagerService
+  wait_for_admin
+  enableAdministrationPortOnManagedServer
   start_managed
 fi
 
