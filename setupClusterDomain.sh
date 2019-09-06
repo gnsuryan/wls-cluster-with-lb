@@ -412,8 +412,6 @@ if [[ $? != 0 ]]; then
   exit 1
 else
   echo "Administration Port enabled successfully for Admin Server"
-  export wlsAdminURL="t3s://$wlsAdminHost:$wlsAdministrationPortAdmin"
-  export wlsAdminHttpURL="https://$wlsAdminHost:$wlsAdministrationPortAdmin"
 fi
 
 }
@@ -421,7 +419,7 @@ fi
 #This function to add machine for a given managed server
 function enableAdministrationPortOnManagedServer()
 {
-    echo "Enabling Administration port on Admin Server"
+    echo "Enabling Administration port on Managed Server"
     cat <<EOF >$DOMAIN_PATH/enableAdministrationPortOnManagedServer.py
 connect('$wlsUserName','$wlsPassword','$wlsAdminURL')
 edit("$wlsServerName")
@@ -435,7 +433,7 @@ destroyEditSession("$wlsServerName")
 disconnect()
 EOF
 
-runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; $INSTALL_PATH/Oracle/Middleware/Oracle_Home/oracle_common/common/bin/wlst.sh $DOMAIN_PATH/enableAdministrationPortOnManagedServer.py"
+runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/enableAdministrationPortOnManagedServer.py"
 if [[ $? != 0 ]]; then
   echo "Error : Failed to enableAdministrationPortOnManagedServer $wlsServerName"
   exit 1
@@ -485,7 +483,7 @@ cmo.setListenPortEnabled(true)
 cd('/Servers/$wlsServerName/SSL/$wlsServerName')
 cmo.setEnabled(false)
 cd('/Servers/$wlsServerName//ServerStart/$wlsServerName')
-arguments = '-Dweblogic.Name=$wlsServerName  -Dweblogic.management.server=$wlsAdminHttpURL'
+arguments = '-Dweblogic.Name=$wlsServerName  -Dweblogic.management.server=$wlsAdminHttpURL -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust'
 cmo.setArguments(arguments)
 save()
 resolve()
@@ -632,7 +630,7 @@ except:
 disconnect()
 EOF
 sudo chown -R $username:$groupname $DOMAIN_PATH
-runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; $INSTALL_PATH/Oracle/Middleware/Oracle_Home/oracle_common/common/bin/wlst.sh $DOMAIN_PATH/start-server.py"
+runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/start-server.py"
 if [[ $? != 0 ]]; then
   echo "Error : Failed in starting managed server $wlsServerName"
   exit 1
@@ -663,13 +661,13 @@ function create_managedSetup(){
     fi
     wait_for_admin
     echo "Adding machine to managed server $wlsServerName"
-    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; $INSTALL_PATH/Oracle/Middleware/Oracle_Home/oracle_common/common/bin/wlst.sh $DOMAIN_PATH/add-machine.py"
+    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/add-machine.py"
     if [[ $? != 0 ]]; then
          echo "Error : Adding machine for managed server $wlsServerName failed"
          exit 1
     fi
     echo "Adding managed server $wlsServerName"
-    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; $INSTALL_PATH/Oracle/Middleware/Oracle_Home/oracle_common/common/bin/wlst.sh $DOMAIN_PATH/add-server.py"
+    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/add-server.py"
     if [[ $? != 0 ]]; then
          echo "Error : Adding server $wlsServerName failed"
          exit 1
@@ -742,7 +740,7 @@ export BASE_DIR="$(readlink -f ${CURR_DIR})"
 if [ $# -ne 8 ]
 then
     usage
-        exit 1
+    exit 1
 fi
 
 export acceptOTNLicenseAgreement=$1
