@@ -337,6 +337,8 @@ domainInfo:
    AdminUserName: "$wlsUserName"
    AdminPassword: "$wlsPassword"
    ServerStartMode: prod
+   AdministrationPortEnabled: true
+   AdministrationPort: 9002
 topology:
    Name: "$wlsDomainName"
    AdminServerName: admin
@@ -352,6 +354,7 @@ topology:
         '$wlsServerName':
             ListenPort: $wlsAdminPort
             RestartDelaySeconds: 10
+	    AdministrationPort: 9001
             SSL:
                ListenPort: $wlsSSLAdminPort
                Enabled: true
@@ -382,6 +385,7 @@ topology:
         '$wlsClusterName':
    Server:
         '$wlsServerName' :
+	   AdministrationPort: 9001
            ListenPort: $wlsManagedPort
            Notes: "$wlsServerName managed server"
            Cluster: "$wlsClusterName"
@@ -428,6 +432,7 @@ cd('/Servers/$wlsServerName')
 cmo.setMachine(getMBean('/Machines/$nmHost'))
 cmo.setCluster(getMBean('/Clusters/$wlsClusterName'))
 cmo.setListenAddress('$nmHost')
+cmo.setAdministrationPort(9001)
 cmo.setListenPort(int($wlsManagedPort))
 cmo.setListenPortEnabled(true)
 cd('/Servers/$wlsServerName/SSL/$wlsServerName')
