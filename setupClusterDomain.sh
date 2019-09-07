@@ -9,7 +9,7 @@ function echo_stderr ()
 #Function to display usage message
 function usage()
 {
-  echo_stderr "./setupClusterDomain.sh <acceptOTNLicenseAgreement> <otnusername> <otnpassword> <wlsDomainName> <wlsUserName> <wlsPassword> <wlsServerName> <adminVMName>"
+  echo_stderr "./setupClusterDomain.sh <acceptOTNLicenseAgreement> <otnusername> <otnpassword> <wlsDomainName> <wlsUserName> <wlsPassword> <wlsServerName> <adminVMName> <LBHostName>"
 }
 
 
@@ -102,6 +102,12 @@ function validateInput()
     then
         echo_stderr "adminVMName is required. "
     fi
+
+    if [ -z "$LBHostName" ];
+    then
+        echo_stderr "LBHostName is required. "
+    fi
+
 }
 
 # Download JDK for WLS
@@ -398,58 +404,16 @@ topology:
            Notes: "$wlsServerName managed server"
            Cluster: "$wlsClusterName"
            Machine: "$nmHost"
+           NetworkAccessPoint:
+                T3Channel:
+                    ListenAddress: None
+                    ListenPort: $T3ChannelPort
+                    PublicAddress: $LBHostName
+                    PublicPort: $T3ChannelPort
    SecurityConfiguration:
        NodeManagerUsername: "$wlsUserName"
        NodeManagerPasswordEncrypted: "$wlsPassword"
 EOF
-}
-
-#This function to add machine for a given managed server
-function enableAdministrationPortOnAdminServer()
-{
-    echo "Enabling Administration port on Admin Server"
-    cat <<EOF >$DOMAIN_PATH/enableAdministrationPortOnAdminServer.py
-readDomain("$DOMAIN_DIR")
-cd('/')
-cmo.setAdministrationPortEnabled(true)
-cmo.setAdministrationPort($wlsAdministrationPortAdmin)
-updateDomain()
-closeDomain()
-EOF
-
-runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; $INSTALL_PATH/Oracle/Middleware/Oracle_Home/oracle_common/common/bin/wlst.sh $DOMAIN_PATH/enableAdministrationPortOnAdminServer.py"
-if [[ $? != 0 ]]; then
-  echo "Error : Failed to enableAdministrationPortOnAdminServer"
-  exit 1
-else
-  echo "Administration Port enabled successfully for Admin Server"
-fi
-
-}
-
-#This function to add machine for a given managed server
-function enableAdministrationPortOnManagedServer()
-{
-    echo "Enabling Administration port on Managed Server"
-    cat <<EOF >$DOMAIN_PATH/enableAdministrationPortOnManagedServer.py
-connect('$wlsUserName','$wlsPassword','$wlsAdminURL')
-edit("$wlsServerName")
-startEdit()
-cd('/Servers/$wlsServerName')
-cmo.setAdministrationPort($wlsAdministrationPortMS)
-save()
-resolve()
-activate()
-destroyEditSession("$wlsServerName")
-disconnect()
-EOF
-
-runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/enableAdministrationPortOnManagedServer.py"
-if [[ $? != 0 ]]; then
-  echo "Error : Failed to enableAdministrationPortOnManagedServer $wlsServerName"
-  exit 1
-fi
-
 }
 
 #This function to add machine for a given managed server
@@ -507,6 +471,35 @@ EOF
 }
 
 
+#This function to add machine for a given managed server
+function createT3ChannelPortOnManagedServer()
+{
+    echo "Creating T3 channel Port on managed server $wlsServerName"
+    cat <<EOF >$DOMAIN_PATH/create-t3-channel.py
+
+connect('$wlsUserName','$wlsPassword','$wlsAdminURL')
+
+edit("$wlsServerName")
+startEdit()
+cd('/Servers/$wlsServerName')
+create('T3Channel','NetworkAccessPoint')
+cd('/Servers/'+$wlsServerName+'/NetworkAccessPoints/T3Channel')
+set('Protocol','t3')
+set('ListenAddress','')
+set('ListenPort',$T3ChannelPort)
+set('PublicAddress', $LBHostName)
+set('PublicPort', $T3ChannelPort)
+set('Enabled','true')
+
+save()
+resolve()
+activate()
+destroyEditSession("$wlsServerName")
+disconnect()
+EOF
+}
+
+
 #Function to create Admin Only Domain
 function create_adminSetup()
 {
@@ -527,8 +520,6 @@ function create_adminSetup()
        echo "Error : Admin setup failed"
        exit 1
     fi
-
-    enableAdministrationPortOnAdminServer
 
 }
 
@@ -660,9 +651,12 @@ function create_managedSetup(){
     fi
     sudo unzip -o weblogic-deploy.zip -d $DOMAIN_PATH
     echo "Creating managed server model files"
+    
     create_managed_model
     create_machine_model
     create_ms_server_model
+    createT3ChannelPortOnManagedServer
+    
     echo "Completed managed server model files"
     sudo chown -R $username:$groupname $DOMAIN_PATH
     runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; $DOMAIN_PATH/weblogic-deploy/bin/createDomain.sh -oracle_home $INSTALL_PATH/Oracle/Middleware/Oracle_Home -domain_parent $DOMAIN_PATH  -domain_type WLS -model_file $DOMAIN_PATH/managed-domain.yaml"
@@ -677,12 +671,22 @@ function create_managedSetup(){
          echo "Error : Adding machine for managed server $wlsServerName failed"
          exit 1
     fi
+    
+    
     echo "Adding managed server $wlsServerName"
     runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/add-server.py"
     if [[ $? != 0 ]]; then
          echo "Error : Adding server $wlsServerName failed"
          exit 1
     fi
+
+    echo "Creating T3 Channel on managed server $wlsServerName"
+    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/create-t3-channel.py"
+    if [[ $? != 0 ]]; then
+         echo "Error : Creating T3 Channel on Managed server $wlsServerName failed"
+         exit 1
+    fi
+
 }
 
 #Install Weblogic Server using Silent Installation Templates
@@ -732,6 +736,7 @@ function enabledAndStartNodeManagerService()
   sudo systemctl daemon-reload
   echo "Starting nodemanager service"
   sudo systemctl start wls_nodemanager
+  sleep 1m
 }
 
 function enableAndStartAdminServerService()
@@ -748,7 +753,7 @@ function enableAndStartAdminServerService()
 CURR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export BASE_DIR="$(readlink -f ${CURR_DIR})"
 
-if [ $# -ne 8 ]
+if [ $# -ne 9 ]
 then
     usage
     exit 1
@@ -762,17 +767,16 @@ export wlsUserName=$5
 export wlsPassword=$6
 export wlsServerName=$7
 export wlsAdminHost=$8
-
+export LBHostName=$9
 
 validateInput
 
-export wlsAdministrationPortAdmin=9002
-export wlsAdministrationPortMS=9001
 export wlsAdminPort=7001
 export wlsSSLAdminPort=7002
 export wlsManagedPort=8001
-export wlsAdminURL="t3s://$wlsAdminHost:$wlsAdministrationPortAdmin"
-export wlsAdminHttpURL="https://$wlsAdminHost:$wlsAdministrationPortAdmin"
+export T3ChannelPort=8501
+export wlsAdminURL="t3://$wlsAdminHost:$wlsAdminPort"
+export wlsAdminHttpURL="http://$wlsAdminHost:$wlsAdminPort"
 export wlsClusterName="cluster1"
 export WLS_VER="12.2.1.3.0"
 export nmHost=`hostname`
@@ -813,7 +817,6 @@ else
   create_nodemanager_service
   enabledAndStartNodeManagerService
   wait_for_admin
-  enableAdministrationPortOnManagedServer
   start_managed
 fi
 
