@@ -382,7 +382,7 @@ EOF
 #Creates weblogic deployment model for cluster domain managed server
 function create_managed_model()
 {
-    echo "Creating admin domain model"
+    echo "Creating managed domain model"
     cat <<EOF >$DOMAIN_PATH/managed-domain.yaml
 domainInfo:
    AdminUserName: "$wlsUserName"
@@ -408,7 +408,7 @@ topology:
                 T3Channel:
                     ListenAddress: None
                     ListenPort: $T3ChannelPort
-                    PublicAddress: $LBHostName
+                    PublicAddress: "$LBHostName"
                     PublicPort: $T3ChannelPort
    SecurityConfiguration:
        NodeManagerUsername: "$wlsUserName"
