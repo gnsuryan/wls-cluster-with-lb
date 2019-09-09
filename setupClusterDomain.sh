@@ -408,15 +408,15 @@ topology:
                 T3Channel:
                     Protocol: "t3"
                     ListenAddress: None
-                    ListenPort: $T3ChannelPort
+                    ListenPort: $channelPort
                     PublicAddress: "$LBHostName"
-                    PublicPort: $T3ChannelPort
+                    PublicPort: $channelPort
                 HTTPChannel:
                     Protocol: "http"
                     ListenAddress: None
-                    ListenPort: $T3ChannelPort
+                    ListenPort: $channelPort
                     PublicAddress: "$LBHostName"
-                    PublicPort: $T3ChannelPort
+                    PublicPort: $channelPort
    SecurityConfiguration:
        NodeManagerUsername: "$wlsUserName"
        NodeManagerPasswordEncrypted: "$wlsPassword"
