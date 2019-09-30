@@ -115,12 +115,12 @@ function downloadJDK()
 {
    for in in {1..5}
    do
-     curl -s https://raw.githubusercontent.com/typekpb/oradown/master/oradown.sh  | bash -s -- --cookie=accept-weblogicserver-server --username="${otnusername}" --password="${otnpassword}" https://download.oracle.com/otn/java/jdk/8u221-b11/230deb18db3e4014bb8e3e8324f81b43/jdk-8u221-linux-x64.tar.gz
-     tar -tzf jdk-8u221-linux-x64.tar.gz
+     curl -s https://raw.githubusercontent.com/typekpb/oradown/master/oradown.sh  | bash -s -- --cookie=accept-weblogicserver-server --username="${otnusername}" --password="${otnpassword}" https://download.oracle.com/otn/java/jdk/8u211-b12/478a62b7d4e34b78b671c754eaaf38ab/jdk-8u211-linux-x64.tar.gz
+     tar -tzf jdk-8u211-linux-x64.tar.gz
      if [ $? != 0 ];
      then
         echo "Download failed. Trying again..."
-        rm -f jdk-8u221-linux-x64.tar.gz
+        rm -f jdk-8u211-linux-x64.tar.gz
      else
         echo "Downloaded JDK successfully"
         break
@@ -131,10 +131,10 @@ function downloadJDK()
 #Setup JDK required for WLS installation
 function setupJDK()
 {
-    sudo cp $BASE_DIR/jdk-8u221-linux-x64.tar.gz $JDK_PATH/jdk-8u221-linux-x64.tar.gz
+    sudo cp $BASE_DIR/jdk-8u211-linux-x64.tar.gz $JDK_PATH/jdk-8u211-linux-x64.tar.gz
 
     echo "extracting and setting up jdk..."
-    sudo tar -zxf $JDK_PATH/jdk-8u221-linux-x64.tar.gz --directory $JDK_PATH
+    sudo tar -zxf $JDK_PATH/jdk-8u211-linux-x64.tar.gz --directory $JDK_PATH
     sudo chown -R $username:$groupname $JDK_PATH
 
     export JAVA_HOME=$JDK_PATH/jdk1.8.0_211
@@ -199,7 +199,7 @@ function downloadWLS()
 function validateJDKZipCheckSum()
 {
   jdkZipFile="$BASE_DIR/jdk-8u211-linux-x64.tar.gz"
-  jdk18u211Sha256Checksum="bac52b7f120a03c4c0815ca8fc77c02a8f3db2ded121ffad7449525f377e2479"
+  jdk18u211Sha256Checksum="c0b7e45330c3f79750c89de6ee0d949ed4af946849592154874d22abc9c4668d"
 
   downloadedJDKZipCheckSum=$(sha256sum $jdkZipFile | cut -d ' ' -f 1)
 
@@ -218,10 +218,10 @@ function cleanup()
 {
     echo "Cleaning up temporary files..."
 
-    rm -f $BASE_DIR/jdk-8u221-linux-x64.tar.gz
+    rm -f $BASE_DIR/jdk-8u211-linux-x64.tar.gz
     rm -f $BASE_DIR/fmw_12.2.1.4.0_wls_Disk1_1of1.zip
 
-    rm -rf $JDK_PATH/jdk-8u221-linux-x64.tar.gz
+    rm -rf $JDK_PATH/jdk-8u211-linux-x64.tar.gz
     rm -rf $WLS_PATH/fmw_12.2.1.4.0_wls_Disk1_1of1.zip
 
     rm -rf $WLS_PATH/silent-template
