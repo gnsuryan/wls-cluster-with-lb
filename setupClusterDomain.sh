@@ -151,12 +151,12 @@ function setupJDK()
     fi
 }
 
-# Setup WLS 12.2.1.3.0
+# Setup WLS 12.2.1.4.0
 function setupWLS()
 {
-    sudo cp $BASE_DIR/fmw_12.2.1.3.0_wls_Disk1_1of1.zip $WLS_PATH/fmw_12.2.1.3.0_wls_Disk1_1of1.zip
-    echo "unzipping fmw_12.2.1.3.0_wls_Disk1_1of1.zip..."
-    sudo unzip -o $WLS_PATH/fmw_12.2.1.3.0_wls_Disk1_1of1.zip -d $WLS_PATH
+    sudo cp $BASE_DIR/fmw_12.2.1.4.0_wls_Disk1_1of1.zip $WLS_PATH/fmw_12.2.1.4.0_wls_Disk1_1of1.zip
+    echo "unzipping fmw_12.2.1.4.0_wls_Disk1_1of1.zip..."
+    sudo unzip -o $WLS_PATH/fmw_12.2.1.4.0_wls_Disk1_1of1.zip -d $WLS_PATH
 
     export SILENT_FILES_DIR=$WLS_PATH/silent-template
     sudo mkdir -p $SILENT_FILES_DIR
@@ -164,7 +164,7 @@ function setupWLS()
     sudo chown -R $username:$groupname $WLS_PATH
 
     export INSTALL_PATH="$WLS_PATH/install"
-    export WLS_JAR="$WLS_PATH/fmw_12.2.1.3.0_wls.jar"
+    export WLS_JAR="$WLS_PATH/fmw_12.2.1.4.0_wls.jar"
 
     mkdir -p $INSTALL_PATH
     sudo chown -R $username:$groupname $INSTALL_PATH
@@ -182,12 +182,12 @@ function downloadWLS()
 
   for in in {1..5}
   do
-     curl -s https://raw.githubusercontent.com/typekpb/oradown/master/oradown.sh  | bash -s -- --cookie=accept-weblogicserver-server --username="${otnusername}" --password="${otnpassword}" http://download.oracle.com/otn/nt/middleware/12c/12213/fmw_12.2.1.3.0_wls_Disk1_1of1.zip
-     unzip -l fmw_12.2.1.3.0_wls_Disk1_1of1.zip
+     curl -s https://raw.githubusercontent.com/typekpb/oradown/master/oradown.sh  | bash -s -- --cookie=accept-weblogicserver-server --username="${otnusername}" --password="${otnpassword}" http://download.oracle.com/otn/nt/middleware/12c/122140/fmw_12.2.1.4.0_wls_Disk1_1of1.zip
+     unzip -l fmw_12.2.1.4.0_wls_Disk1_1of1.zip
      if [ $? != 0 ];
      then
         echo "Download failed. Trying again..."
-        rm -f fmw_12.2.1.3.0_wls_Disk1_1of1.zip
+        rm -f fmw_12.2.1.4.0_wls_Disk1_1of1.zip
      else
         echo "Downloaded WLS successfully"
         break
@@ -219,10 +219,10 @@ function cleanup()
     echo "Cleaning up temporary files..."
 
     rm -f $BASE_DIR/jdk-8u131-linux-x64.tar.gz
-    rm -f $BASE_DIR/fmw_12.2.1.3.0_wls_Disk1_1of1.zip
+    rm -f $BASE_DIR/fmw_12.2.1.4.0_wls_Disk1_1of1.zip
 
     rm -rf $JDK_PATH/jdk-8u131-linux-x64.tar.gz
-    rm -rf $WLS_PATH/fmw_12.2.1.3.0_wls_Disk1_1of1.zip
+    rm -rf $WLS_PATH/fmw_12.2.1.4.0_wls_Disk1_1of1.zip
 
     rm -rf $WLS_PATH/silent-template
 
@@ -807,7 +807,7 @@ export channelPort=8501
 export wlsAdminURL="t3://$wlsAdminHost:$wlsAdminPort"
 export wlsAdminHttpURL="http://$wlsAdminHost:$wlsAdminPort"
 export wlsClusterName="cluster1"
-export WLS_VER="12.2.1.3.0"
+export WLS_VER="12.2.1.4.0"
 export nmHost=`hostname`
 export nmPort=5556
 export WEBLOGIC_DEPLOY_TOOL=https://github.com/oracle/weblogic-deploy-tooling/releases/download/weblogic-deploy-tooling-1.1.1/weblogic-deploy.zip
