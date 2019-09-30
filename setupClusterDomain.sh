@@ -198,12 +198,12 @@ function downloadWLS()
 # Validate th JDK downloaded checksum
 function validateJDKZipCheckSum()
 {
-  jdkZipFile="$BASE_DIR/jdk-8u131-linux-x64.tar.gz"
-  jdk18u131Sha256Checksum="62b215bdfb48bace523723cdbb2157c665e6a25429c73828a32f00e587301236"
+  jdkZipFile="$BASE_DIR/jdk-8u211-linux-x64.tar.gz"
+  jdk18u211Sha256Checksum="bac52b7f120a03c4c0815ca8fc77c02a8f3db2ded121ffad7449525f377e2479"
 
   downloadedJDKZipCheckSum=$(sha256sum $jdkZipFile | cut -d ' ' -f 1)
 
-  if [ "${jdk18u131Sha256Checksum}" == "${downloadedJDKZipCheckSum}" ];
+  if [ "${jdk18u211Sha256Checksum}" == "${downloadedJDKZipCheckSum}" ];
   then
     echo "Checksum match successful. Proceeding with Weblogic Install Kit Zip Download from OTN..."
   else
