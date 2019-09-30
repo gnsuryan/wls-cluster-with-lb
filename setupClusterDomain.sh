@@ -182,7 +182,7 @@ function downloadWLS()
 
   for in in {1..5}
   do
-     curl -s https://raw.githubusercontent.com/typekpb/oradown/master/oradown.sh  | bash -s -- --cookie=accept-weblogicserver-server --username="${otnusername}" --password="${otnpassword}" http://download.oracle.com/otn/nt/middleware/12c/122140/fmw_12.2.1.4.0_wls_Disk1_1of1.zip
+     curl -s https://raw.githubusercontent.com/typekpb/oradown/master/oradown.sh  | bash -s -- --cookie=accept-weblogicserver-server --username="${otnusername}" --password="${otnpassword}" https://download.oracle.com/otn/nt/middleware/12c/122140/fmw_12.2.1.4.0_wls_Disk1_1of1.zip
      unzip -l fmw_12.2.1.4.0_wls_Disk1_1of1.zip
      if [ $? != 0 ];
      then
