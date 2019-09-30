@@ -115,12 +115,12 @@ function downloadJDK()
 {
    for in in {1..5}
    do
-     curl -s https://raw.githubusercontent.com/typekpb/oradown/master/oradown.sh  | bash -s -- --cookie=accept-weblogicserver-server --username="${otnusername}" --password="${otnpassword}" https://download.oracle.com/otn/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz
-     tar -tzf jdk-8u131-linux-x64.tar.gz
+     curl -s https://raw.githubusercontent.com/typekpb/oradown/master/oradown.sh  | bash -s -- --cookie=accept-weblogicserver-server --username="${otnusername}" --password="${otnpassword}" https://download.oracle.com/otn/java/jdk/8u221-b11/230deb18db3e4014bb8e3e8324f81b43/jdk-8u221-linux-x64.tar.gz
+     tar -tzf jdk-8u221-linux-x64.tar.gz
      if [ $? != 0 ];
      then
         echo "Download failed. Trying again..."
-        rm -f jdk-8u131-linux-x64.tar.gz
+        rm -f jdk-8u221-linux-x64.tar.gz
      else
         echo "Downloaded JDK successfully"
         break
@@ -131,13 +131,13 @@ function downloadJDK()
 #Setup JDK required for WLS installation
 function setupJDK()
 {
-    sudo cp $BASE_DIR/jdk-8u131-linux-x64.tar.gz $JDK_PATH/jdk-8u131-linux-x64.tar.gz
+    sudo cp $BASE_DIR/jdk-8u221-linux-x64.tar.gz $JDK_PATH/jdk-8u221-linux-x64.tar.gz
 
     echo "extracting and setting up jdk..."
-    sudo tar -zxf $JDK_PATH/jdk-8u131-linux-x64.tar.gz --directory $JDK_PATH
+    sudo tar -zxf $JDK_PATH/jdk-8u221-linux-x64.tar.gz --directory $JDK_PATH
     sudo chown -R $username:$groupname $JDK_PATH
 
-    export JAVA_HOME=$JDK_PATH/jdk1.8.0_131
+    export JAVA_HOME=$JDK_PATH/jdk1.8.0_211
     export PATH=$JAVA_HOME/bin:$PATH
 
     java -version
@@ -218,10 +218,10 @@ function cleanup()
 {
     echo "Cleaning up temporary files..."
 
-    rm -f $BASE_DIR/jdk-8u131-linux-x64.tar.gz
+    rm -f $BASE_DIR/jdk-8u221-linux-x64.tar.gz
     rm -f $BASE_DIR/fmw_12.2.1.4.0_wls_Disk1_1of1.zip
 
-    rm -rf $JDK_PATH/jdk-8u131-linux-x64.tar.gz
+    rm -rf $JDK_PATH/jdk-8u221-linux-x64.tar.gz
     rm -rf $WLS_PATH/fmw_12.2.1.4.0_wls_Disk1_1of1.zip
 
     rm -rf $WLS_PATH/silent-template
@@ -531,7 +531,7 @@ function create_adminSetup()
     sudo unzip -o weblogic-deploy.zip -d $DOMAIN_PATH
     create_admin_model
     sudo chown -R $username:$groupname $DOMAIN_PATH
-    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; $DOMAIN_PATH/weblogic-deploy/bin/createDomain.sh -oracle_home $INSTALL_PATH/Oracle/Middleware/Oracle_Home -domain_parent $DOMAIN_PATH  -domain_type WLS -model_file $DOMAIN_PATH/admin-domain.yaml"
+    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_211 ; $DOMAIN_PATH/weblogic-deploy/bin/createDomain.sh -oracle_home $INSTALL_PATH/Oracle/Middleware/Oracle_Home -domain_parent $DOMAIN_PATH  -domain_type WLS -model_file $DOMAIN_PATH/admin-domain.yaml"
     if [[ $? != 0 ]]; then
        echo "Error : Admin setup failed"
        exit 1
@@ -648,7 +648,7 @@ except:
 disconnect()
 EOF
 sudo chown -R $username:$groupname $DOMAIN_PATH
-runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/start-server.py"
+runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_211 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/start-server.py"
 if [[ $? != 0 ]]; then
   echo "Error : Failed in starting managed server $wlsServerName"
   exit 1
@@ -675,14 +675,14 @@ function create_managedSetup(){
     
     echo "Completed managed server model files"
     sudo chown -R $username:$groupname $DOMAIN_PATH
-    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; $DOMAIN_PATH/weblogic-deploy/bin/createDomain.sh -oracle_home $INSTALL_PATH/Oracle/Middleware/Oracle_Home -domain_parent $DOMAIN_PATH  -domain_type WLS -model_file $DOMAIN_PATH/managed-domain.yaml"
+    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_211 ; $DOMAIN_PATH/weblogic-deploy/bin/createDomain.sh -oracle_home $INSTALL_PATH/Oracle/Middleware/Oracle_Home -domain_parent $DOMAIN_PATH  -domain_type WLS -model_file $DOMAIN_PATH/managed-domain.yaml"
     if [[ $? != 0 ]]; then
        echo "Error : Managed setup failed"
        exit 1
     fi
     wait_for_admin
     echo "Adding machine to managed server $wlsServerName"
-    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/add-machine.py"
+    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_211 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/add-machine.py"
     if [[ $? != 0 ]]; then
          echo "Error : Adding machine for managed server $wlsServerName failed"
          exit 1
@@ -690,14 +690,14 @@ function create_managedSetup(){
     
     
     echo "Adding managed server $wlsServerName"
-    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/add-server.py"
+    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_211 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/add-server.py"
     if [[ $? != 0 ]]; then
          echo "Error : Adding server $wlsServerName failed"
          exit 1
     fi
 
     echo "Creating T3 Channel on managed server $wlsServerName"
-    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_131 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/create-t3-channel.py"
+    runuser -l oracle -c "export JAVA_HOME=$JDK_PATH/jdk1.8.0_211 ; . $DOMAIN_DIR/bin/setDomainEnv.sh; java -Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust weblogic.WLST $DOMAIN_PATH/create-t3-channel.py"
     if [[ $? != 0 ]]; then
          echo "Error : Creating T3 Channel on Managed server $wlsServerName failed"
          exit 1
